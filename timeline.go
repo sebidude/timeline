@@ -21,8 +21,8 @@ type Timeline struct {
 	gocui  *gocui.Gui
 }
 
-func NewTimeline(tlfilename string) (*Timeline, error) {
-	tlf, err := os.OpenFile(tlfilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func NewTimeline(tlfilename string) *Timeline {
+	tlf, err := os.OpenFile(tlfilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -38,21 +38,21 @@ func NewTimeline(tlfilename string) (*Timeline, error) {
 	g.BgColor = gocui.ColorWhite
 	tl.gocui = g
 
-	return tl, nil
+	return tl
 }
 
-func (tl *Timeline) ReadFile() ([]byte, error) {
+func (tl *Timeline) ReadFile() []byte {
 	content, err := ioutil.ReadFile(tl.title)
 	if err != nil {
-		return []byte(""), err
+		log.Panicln(err)
+
 	}
-	return content, nil
+	return content
 }
 
-func (tl *Timeline) Close() error {
+func (tl *Timeline) Close() {
 	tl.gocui.Close()
 	tl.tlfile.Close()
-	return nil
 }
 
 func (tl *Timeline) quit(g *gocui.Gui, v *gocui.View) error {
@@ -88,7 +88,7 @@ func (tl *Timeline) layout(g *gocui.Gui) error {
 		p.Title = tl.title
 		p.SelFgColor = gocui.ColorWhite
 		p.SelBgColor = gocui.ColorBlack
-		content, _ := tl.ReadFile()
+		content := tl.ReadFile()
 		tl.SetContent(content)
 	}
 	return nil
@@ -159,7 +159,7 @@ func main() {
 		tlfilename = ".timeline"
 	}
 
-	timeline, _ := NewTimeline(tlfilename)
+	timeline := NewTimeline(tlfilename)
 	defer timeline.Close()
 
 	timeline.gocui.Cursor = true
@@ -187,7 +187,5 @@ func main() {
 	if err := timeline.gocui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
-
-	//timeline.Close()
 
 }
