@@ -63,7 +63,14 @@ func (tl *Timeline) quit(g *gocui.Gui, v *gocui.View) error {
 
 func (tl *Timeline) layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("main", 0, maxY-4, maxX-1, maxY-1); err != nil {
+	if v, err := g.SetView("timer", maxX-15, maxY-4, maxX-1, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Editable = false
+		v.Title = "Duration"
+	}
+	if v, err := g.SetView("main", 0, maxY-4, maxX-16, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -92,6 +99,21 @@ func (tl *Timeline) layout(g *gocui.Gui) error {
 		tl.SetContent(content)
 	}
 	return nil
+}
+
+func (tl *Timeline) timer() {
+	startTime := time.Now()
+	for {
+		time.Sleep(time.Second * 1)
+		now := time.Now()
+		duration := now.Sub(startTime)
+		tl.gocui.Update(func(g *gocui.Gui) error {
+			v, _ := g.View("timer")
+			v.Clear()
+			fmt.Fprintf(v, "%10s", duration.Round(time.Second).String())
+			return nil
+		})
+	}
 }
 
 func (tl *Timeline) scrollUp(g *gocui.Gui, v *gocui.View) error {
@@ -167,6 +189,8 @@ func main() {
 	timeline.gocui.ASCII = false
 
 	timeline.gocui.SetManagerFunc(timeline.layout)
+
+	go timeline.timer()
 
 	if err := timeline.gocui.SetKeybinding("main", gocui.KeyEnter, gocui.ModNone, timeline.logEntry); err != nil {
 		log.Println(vbuf)
